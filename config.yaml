@@ -1,0 +1,100 @@
+# Em GRPO Reaction Optimization Configuration
+# Optimizes Em for Discord reaction prediction using custom reward model
+
+# Base model and loading
+base_model: david-ar/Em-24B  # Your Em model on HuggingFace
+model_type: MistralForCausalLM
+tokenizer_type: AutoTokenizer
+trust_remote_code: true
+
+# Custom chat template for Em's format: [user message]\n<Em> [assistant message]\n
+chat_template: jinja
+chat_template_jinja: "{{ messages[0].content }}\n<Em> {{ messages[1].content if messages|length > 1 else '' }}"
+
+# Device and memory optimization
+device_map: "balanced"
+load_in_4bit: true
+load_in_8bit: false
+bf16: true
+low_cpu_mem_usage: true
+
+# Performance optimizations
+flash_attention: true
+gradient_checkpointing: true
+gradient_checkpointing_kwargs:
+  use_reentrant: false
+
+# GRPO training configuration  
+rl: grpo
+trl:
+  use_vllm: false                   # Use direct generation, not vLLM
+  
+  # GRPO hyperparameters
+  beta: 0.01                        # KL penalty (start conservative)
+  max_completion_length: 256        # Em response length limit
+  num_generations: 8                # Responses per prompt (group size)
+  
+  # Reward function integration
+  reward_funcs: ["grpo_code.reaction_reward_func"]
+  reward_weights: [1.0]
+
+# Dataset configuration - simplified
+datasets:
+  - path: "/workspace/fine-tuning/synthetic_conversations.jsonl"
+    type: grpo_code.conversation_transform
+    ds_type: json
+    split: train
+
+# Output and dataset paths
+dataset_prepared_path: last_run_prepared
+output_dir: ./em_grpo_outputs
+val_set_size: 0.0                   # No validation set for RL
+
+# Sequence settings
+sequence_len: 2048                  # Match reward model training
+sample_packing: false               # Don't pack for RL
+pad_to_sequence_len: true
+train_on_inputs: false
+
+# LoRA configuration (reuse from Em training)
+adapter: lora
+lora_r: 64
+lora_alpha: 128
+lora_dropout: 0.1
+lora_target_modules:
+  - q_proj
+  - v_proj
+  - k_proj
+  - o_proj
+  - gate_proj
+  - down_proj
+  - up_proj
+
+# Training parameters
+micro_batch_size: 1                 # 1 prompt -> 8 responses  
+gradient_accumulation_steps: 8      # Effective batch size 8
+learning_rate: 1e-6                 # Conservative for RL
+warmup_steps: 50
+weight_decay: 0.01
+optimizer: adamw_torch
+lr_scheduler: cosine
+
+# Logging and monitoring
+logging_steps: 10
+save_steps: 50
+save_total_limit: 10                # Keep last 10 checkpoints
+
+# Weights & Biases integration
+wandb_project: em-reaction-optimization
+wandb_entity: davidar
+wandb_name: em-grpo-experiment
+wandb_log_model: "false"
+
+# TRL specific settings
+group_by_length: false
+dataloader_num_workers: 4
+
+# Safety and debugging
+max_grad_norm: 1.0
+report_to: wandb
+include_tokens_per_second: true

@@ -1,46 +1,48 @@
-SYSTEM_PROMPT = """
-Respond in the following format:
-<reasoning>
-...
-</reasoning>
-<answer>
-...
-</answer>
-
-Additionally, you may optionally use the following imports:
-
-import time
-import itertools
-from itertools import accumulate, product, permutations, combinations
-import collections
-from collections import Counter, OrderedDict, deque, defaultdict, ChainMap
-from functools import lru_cache
-import math
-from typing import List, Dict, Tuple, Optional, Any
-
-If you choose to use any of these imports, ensure they are included
-inside the <answer> </answer> tags, e.g:
-
-<answer>
-import time
-import math
-...
-</answer>
-
-You may not utilise any other imports or filesystem operations. 
+"""
+Dataset transforms for IRC conversation data for GRPO training.
 """
 
+import logging
 
-def axolotl_acecode_transform(cfg, *args, **kwargs):
+# Set up logging
+logger = logging.getLogger(__name__)
+
+def conversation_transform(cfg, *args, **kwargs):
+    """
+    Transform IRC context to chat format for Em.
+    Em uses format: [user message]\n<Em> [assistant message]\n
+    
+    Input format:
+    {
+        "conversation_id": "synthetic_0000", 
+        "context": "<alice> message\n<bob> reply...",  # IRC conversation
+        "starter": "original topic",  # Topic that started the conversation 
+        "messages": [...],
+        "metadata": {...}
+    }
+    
+    GRPO expects: {"prompt": [{"role": "user", "content": "..."}]}
+    """
     def transform_fn(example, tokenizer=None):
-        return {
-            "prompt": [
-                {
-                    "role": "user",
-                    "content": example["question"] + "\n\n" + SYSTEM_PROMPT,
-                }
-            ],
-            "answers": example["test_cases"],
+        # Get the IRC context
+        context = example.get("context", "")
+        
+        if not context:
+            logger.warning("Empty context in conversation, using fallback")
+            context = "<user> hello"
+        
+        # Return as chat message for Em's format
+        # Include starter as additional context for reward function
+        result = {
+            "prompt": [{"role": "user", "content": context}]
         }
-
-    return transform_fn, {"remove_columns": ["question", "test_cases"]}
+        
+        # Add starter if available (passed to reward function as kwargs)
+        if "starter" in example:
+            result["starter"] = example["starter"]
+            
+        return result
+    
+    return transform_fn, {
+        "remove_columns": ["conversation_id", "messages", "metadata"]
+    }
