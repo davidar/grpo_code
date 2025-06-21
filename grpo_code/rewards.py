@@ -22,14 +22,15 @@ def load_reward_model():
     if _reward_model is None:
         logger.info("Loading Discord reaction reward model...")
         try:
+            merged_path = "/workspace/data/huggingface-cache/hub/models--david-ar--TBD-reward-7B/snapshots/968f9ada723736e14a8d7803e33c6f7871ef6e23/merged/"
             _reward_model = AutoModelForSequenceClassification.from_pretrained(
-                "/workspace/fine-tuning/TBD-reward-7B/merged/",
+                merged_path,
                 torch_dtype=torch.float16,
                 device_map="auto",
                 trust_remote_code=True
             )
             _reward_tokenizer = AutoTokenizer.from_pretrained(
-                "/workspace/fine-tuning/TBD-reward-7B/merged/",
+                merged_path,
                 trust_remote_code=True
             )
             _reward_model.eval()

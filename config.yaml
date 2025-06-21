@@ -40,7 +40,7 @@ trl:
 
 # Dataset configuration - simplified
 datasets:
-  - path: "/workspace/fine-tuning/synthetic_conversations.jsonl"
+  - path: "data/synthetic_conversations.jsonl"
     type: grpo_code.conversation_transform
     ds_type: json
     split: train

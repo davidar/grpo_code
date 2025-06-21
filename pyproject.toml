@@ -2,8 +2,16 @@
 name = "grpo_code"
 dependencies = [
     "wasmtime",
+    "torch",
+    "transformers",
 ]
 version = "0.1.0"
+
+[project.optional-dependencies]
+test = [
+    "pytest>=6.0",
+    "pytest-mock",
+]
 
 [build-system]
 requires = ["setuptools>=64", "wheel"]
@@ -13,3 +21,13 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = [""]
 include = ["grpo_code*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "integration: marks tests as integration tests (may require model files)",
+]
+addopts = "-v --tb=short"

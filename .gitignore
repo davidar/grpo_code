@@ -5,6 +5,9 @@ outputs
 .vscode
 _site/
 
+/em_grpo_outputs/
+/data/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
