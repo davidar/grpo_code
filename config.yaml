@@ -7,9 +7,13 @@ model_type: MistralForCausalLM
 tokenizer_type: AutoTokenizer
 trust_remote_code: true
 
-# Custom chat template for Em's format: [user message]\n<Em> [assistant message]\n
-chat_template: jinja
-chat_template_jinja: "{{ messages[0].content }}\n<Em> {{ messages[1].content if messages|length > 1 else '' }}"
+# Custom chat template for Em's format: [user message]\n<Em>[assistant message]\n
+# chat_template: jinja
+# chat_template_jinja: "{{ messages[0].content }}\n<Em>{{ messages[1].content if messages|length > 1 else '' }}"
+
+# End of turn tokens - set stop token to newline
+eot_tokens:
+  - "\n"
 
 # Device and memory optimization
 device_map: "balanced"
@@ -23,6 +27,8 @@ flash_attention: true
 gradient_checkpointing: true
 gradient_checkpointing_kwargs:
   use_reentrant: false
+
+torch_compile: true
 
 # GRPO training configuration  
 rl: grpo
@@ -40,8 +46,8 @@ trl:
 
 # Dataset configuration - simplified
 datasets:
-  - path: "data/synthetic_conversations.jsonl"
-    type: grpo_code.conversation_transform
+  - path: "data/em_conversations_grpo.jsonl"
+    # type: passthrough
     ds_type: json
     split: train
 
@@ -51,9 +57,9 @@ output_dir: ./em_grpo_outputs
 val_set_size: 0.0                   # No validation set for RL
 
 # Sequence settings
-sequence_len: 2048                  # Match reward model training
+sequence_len: 512
 sample_packing: false               # Don't pack for RL
-pad_to_sequence_len: true
+pad_to_sequence_len: false
 train_on_inputs: false
 
 # LoRA configuration (reuse from Em training)
